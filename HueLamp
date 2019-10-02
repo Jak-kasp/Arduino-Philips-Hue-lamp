@@ -1,0 +1,142 @@
+
+#include<TimeLib.h>
+#include <ESP8266HTTPClient.h>
+#include <ESP8266WiFi.h>
+
+
+#define TRIG_PIN  D2
+#define ECHO_PIN  D3
+#define MAX_DISTANCE 400
+
+int cm;        
+long t; // time in uS
+
+
+
+String ip = "192.168.3.78";  // set here your ip adress
+String user_name = "fU5UwAq0e-bazeN7rn6zZG6k4vsx0bbxqwMQ81cE";  // put here your Hue user name 
+
+
+
+
+
+const char* ssid     = "Kogifi Hue";     // your internet name    
+char* password = "SuperH@rd";       // your internet password
+
+
+
+void distance_measurement ()    // distande measurement
+{
+  digitalWrite(TRIG_PIN, LOW);        
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);       
+  delayMicroseconds(15);
+  digitalWrite(TRIG_PIN, LOW);
+  digitalWrite(ECHO_PIN, HIGH); 
+  t = pulseIn(ECHO_PIN, HIGH);
+  cm = t / 58;                
+}
+
+
+
+
+void SwichLights(){
+  
+  bool current_state;
+
+  
+  HTTPClient http; 
+  String req_string;
+  req_string = "http://";
+  req_string += ip;   //
+  req_string += "/api/";
+  req_string += user_name;
+  req_string += "/lights/1";
+  req_string += "/state";
+  Serial.println(req_string);
+  Serial.print(req_string);
+  http.begin(req_string);
+  http.addHeader("Content-Type", "text/plain");
+
+  String put_string;
+ 
+  Serial.print(cm);
+  Serial.println(" cm");
+  
+  if(cm<5){
+  current_state=0;
+  put_string = "{\"on\":";  
+  put_string += (current_state)? "true" : "false";
+  put_string += "}";
+  http.PUT(put_string);
+  
+  }
+  else if(cm<10&& cm>5){
+  current_state=1;
+  put_string = "{\"on\":";  
+  put_string += (current_state)? "true" : "false";
+  put_string += ", \"sat\":254"", \"bri\":254"", \"hue\":51000}";
+  http.PUT(put_string);
+  }
+  else if(cm<15 && cm>10){
+  current_state=1;
+  put_string = "{\"on\":";  
+  put_string += (current_state)? "true" : "false";
+  put_string += ", \"sat\":254"", \"bri\":254"", \"hue\":53000}";
+  http.PUT(put_string)
+  ;}
+  else if(cm<20 && cm>15){
+  current_state=1;
+  put_string = "{\"on\":";  
+  put_string += (current_state)? "true" : "false";
+  put_string += ", \"sat\":254"", \"bri\":254"", \"hue\":55000}";
+  http.PUT(put_string)
+  ;}
+ 
+
+}
+
+
+
+
+
+void setup() {
+
+
+
+  Serial.begin(115200);         // Start the Serial communication to send messages to the computer
+  delay(10);
+  Serial.println('\n');
+  
+  WiFi.begin(ssid, password);             // Connect to the network
+  Serial.print("Connecting to ");
+  Serial.print(ssid); Serial.println(" ...");
+
+  int i = 0;
+  while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
+    delay(1000);
+    Serial.print(++i); Serial.print(' ');
+  }
+
+  Serial.println('\n');
+  Serial.println("Connection established!");  
+  Serial.print("IP address:\t");
+  Serial.println(WiFi.localIP());  // Send the IP address of the ESP8266 to the computer
+
+
+  pinMode(TRIG_PIN, OUTPUT);                     
+  pinMode(ECHO_PIN, INPUT); 
+  
+  
+}
+
+
+void loop(){
+
+
+  distance_measurement();              
+  delay(200);
+  SwichLights();
+  delay(200);
+  
+  }
